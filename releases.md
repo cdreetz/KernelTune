@@ -1,0 +1,5 @@
+- v0.1
+- date: june 4
+- model: https://huggingface.co/cdreetz/kwen2.5-1.5b
+- dataset: https://huggingface.co/datasets/cdreetz/triton-sft-dataset
+- wandb run: royal-fire-16
