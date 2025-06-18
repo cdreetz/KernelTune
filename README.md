@@ -21,6 +21,15 @@ Why else? I think its fun and part of my journey to become a Master of the Stack
 
 # Worklog (reverse chronological)
 
+
+#### June 17, 2025
+
+- went to try grpo run on the below version of kwen
+- initial reward design was well fit because the model was bad at writing kernel code so lots of room for learning
+- but that reward design was not well fit for this stage with the given model, because the verif started at 80%, little room to grow
+- reward needs to be harder or verification more strict
+- also considering updating the original dataset to include kernel, launch, run code to just try to compile generations
+
 #### June 1, 2025
 
 - created new dataset version with 6k examples
