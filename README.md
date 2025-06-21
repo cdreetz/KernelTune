@@ -1,6 +1,8 @@
 # KernelTune
 
-This project is a compilation of my personal efforts and hopefully eventual shared efforts to create datasets and train models that are very good at writing GPU code.  
+This project is a compilation of my personal efforts and hopefully eventual shared efforts to create datasets and train models that are very good at writing GPU code.
+
+If you are interested in this project please reach out and/or join the GPU MODE Discord Popcorn channel to chat about Kernel data.
 
 
 # Releases
