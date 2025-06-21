@@ -2,10 +2,6 @@
 
 This project is a compilation of my personal efforts and hopefully eventual shared efforts to create datasets and train models that are very good at writing GPU code.  
 
-Why? GPU kernels are a perfect application for LLMs for a few reasons.  They are verifiable, they either work or they dont, their are no opinions, the kernel that performs better is simply the better kernel.  Kernel writing and optimization is a largely iterative process because underlying instruction sets are unknown making it nearly impossible to ever know how to write a perfectly performant kernel in 1 shot.  This iterative process is perfectly handled by LLMs that can generate infinite amount of kernel code with slightly varying configurations to find the one that is king.
-
-Why else? I think its fun and part of my journey to become a Master of the Stack.
-
 
 # Releases
 
