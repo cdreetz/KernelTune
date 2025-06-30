@@ -6,8 +6,11 @@ import asyncio
 import aiohttp
 from pathlib import Path
 from datasets import Dataset, load_dataset
+from dotenv import load_dotenv
 
 from utils import get_ops, get_completion
+
+load_dotenv()
 
 class SFTDatasetGenerator:
     def __init__(self, ops, num_examples=1000, seed=117, max_concurrent=10, include_triton_docs=False):
@@ -22,19 +25,21 @@ class SFTDatasetGenerator:
         if self.include_triton_docs:
             self.triton_docs = self._load_triton_docs()
         
-        self.xml_format = """
-<kernel>
-@triton.jit
-...
-</kernel>
-<launch_fn>
-...
-</launch_fn>
-"""
         self.post_prompt = """
-Write both the kernel method and the corresponding launch method. 
-Include the docstring explaining arguments and expected size, shape, and number of dimensions.
-Answer in the following format:\n
+Write a complete, runnable Triton implementation that includes:
+1. The kernel function with @triton.jit decorator
+2. A launch function that handles tensor creation, grid calculation, and kernel invocation
+3. A run function that demonstrates usage with sample inputs and validates correctness
+
+Include proper error handling, docstrings, and ensure the code can be executed to verify compilation.
+Make sure all imports are included and the implementation is self-contained.
+
+The implementation should be production-ready and include:
+- Input validation
+- Proper grid sizing calculations
+- Memory management
+- Basic correctness checks
+- Clear documentation
 """
         random.seed(seed)
         self.queries_system_prompt = """
@@ -44,8 +49,9 @@ You are playing the role of user who is going to ask for a triton kernel for a g
         # Update responses system prompt to include docs if enabled
         base_responses_prompt = """
 You are playing the role of a triton kernel expert. 
-Given a query, respond with a triton kernel for the given operation. 
-It is important that kernel and launch functions are correctly wrapped in their tags.
+Given a query, respond with a complete, runnable triton implementation that can be executed and verified.
+The response should include the kernel, launch function, and a demonstration/test function.
+Focus on creating code that compiles and runs correctly.
 """
         
         if self.include_triton_docs and self.triton_docs:
@@ -146,8 +152,9 @@ Use the above Triton documentation as reference when writing kernels. Make sure 
         # Update the responses system prompt
         base_responses_prompt = """
 You are playing the role of a triton kernel expert. 
-Given a query, respond with a triton kernel for the given operation. 
-It is important that kernel and launch functions are correctly wrapped in their tags.
+Given a query, respond with a complete, runnable triton implementation that can be executed and verified.
+The response should include the kernel, launch function, and a demonstration/test function.
+Focus on creating code that compiles and runs correctly.
 """
         
         if self.include_triton_docs and self.triton_docs:
@@ -177,7 +184,7 @@ Use the above Triton documentation as reference when writing kernels. Make sure 
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt}
             ],
-            "max_tokens": 2000,
+            "max_tokens": 4000,  # Increased for full implementation
         }
         
         # Fix URL construction to avoid double slashes
@@ -190,14 +197,14 @@ Use the above Triton documentation as reference when writing kernels. Make sure 
                     url,
                     headers=headers,
                     json=payload,
-                    timeout=aiohttp.ClientTimeout(total=60)
+                    timeout=aiohttp.ClientTimeout(total=300)
                 ) as response:
                     if response.status == 200:
                         data = await response.json()
                         return data["choices"][0]["message"]["content"]
                     elif response.status == 429:
                         # Rate limit hit, wait with exponential backoff
-                        wait_time = (2 ** attempt) * 5  # 5, 10, 20 seconds
+                        wait_time = (2 ** attempt) * 10  # 10, 20, 40 seconds
                         print(f"Rate limit hit, waiting {wait_time}s before retry {attempt + 1}/{max_retries}")
                         await asyncio.sleep(wait_time)
                         continue
@@ -232,7 +239,7 @@ Use the above Triton documentation as reference when writing kernels. Make sure 
                     last_request_time = time.time()
                     
                     try:
-                        prompt = query['text'] + self.post_prompt + self.xml_format
+                        prompt = query['text'] + self.post_prompt
                         response = await self.get_completion_async(prompt, self.responses_system_prompt, session)
                         return (query, response, None)
                     except Exception as e:
@@ -326,7 +333,7 @@ Use the above Triton documentation as reference when writing kernels. Make sure 
             print(f"  Query {i+1}/{k} for {uuid_str[:8]}...", end=" ... ", flush=True)
             prompt = f"""
 PyTorch code: {example['python_code']}
-Convert this PyTorch code to a Triton kernel.
+Convert this PyTorch code to a complete, runnable Triton implementation.
 """
             print("✓")
             all_queries[uuid_str] = {
@@ -347,7 +354,7 @@ Convert this PyTorch code to a Triton kernel.
         return all_queries
 
     def get_response(self, query):
-        prompt = query['text'] + self.post_prompt + self.xml_format
+        prompt = query['text'] + self.post_prompt
         return get_completion(prompt, self.responses_system_prompt)
 
     def get_response_batch(self, queries_batch):

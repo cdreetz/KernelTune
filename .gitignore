@@ -19,3 +19,5 @@ bin/
 __pycache__/
 
 checkpoint-200/
+
+local_tests/
